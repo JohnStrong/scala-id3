@@ -68,11 +68,11 @@ object ID3Runner {
     val (training, test) = split(d)
 
     val data = training.map {
-      e => id3.Data(e(0), e(1),e(2), e(3),e(4))
+      e => Data(e(0), e(1),e(2), e(3),e(4))
     }
 
     val t = test.map {
-      e => id3.Data( e(0), e(1), e(2), e(3), e(4))
+      e => Data( e(0), e(1), e(2), e(3), e(4))
     }
 
     implicit val res = DecisionTree.create(data, ATTRIBUTE_LIST, TARGET_ATTRIBUTE)
