@@ -3,7 +3,7 @@ package id3
 import  scala.collection.mutable.{HashMap, ListBuffer}
 import  scala.language.{reflectiveCalls, implicitConversions}
 
-sealed trait ID3
+sealed trait ID3 extends id3.util.Implicits
 
 case class Data(
   bodyLength:String,
@@ -18,29 +18,7 @@ case class DecisionTreeNode(
   children:ListBuffer[(String, DecisionTreeNode)]
 ) extends ID3
 
-object DataAttributeExtractor extends ID3 {
-
-  // owl class and desired attribute
-  def getField[T](d:T, a:String) = {
-    d.getClass.getDeclaredField(a)
-  }
-
-  def getFieldValue[T](d:T, a:String) = {
-    val field = getField(d, a)
-    field.setAccessible(true)
-    field.get(d).toString
-  }
-}
-
-object DataImplicits extends ID3 {
-  implicit def fieldToValue[T](o:T) = new AnyRef {
-    def fieldValue(a:String) = DataAttributeExtractor.getFieldValue(o, a)
-  }
-}
-
 object AttributeSelector extends ID3 {
-
-  import DataImplicits.fieldToValue
 
   // d -> set of filtered data
   // t -> target attribute
@@ -127,8 +105,6 @@ object AttributeSelector extends ID3 {
 }
 
 object DecisionTree extends ID3 {
-
-  import DataImplicits.fieldToValue
 
   private def _classify[T](
     d:List[T],
@@ -220,7 +196,8 @@ object DecisionTree extends ID3 {
   def classify[T, A](d:List[T],t:String)(_after:Double => A)(implicit tree:DecisionTreeNode) = {
     val l = d.length
     val r = _classify(d, t)
+    val avg = r/l
 
-    _after(r/l)
+    _after(avg)
   }
 }

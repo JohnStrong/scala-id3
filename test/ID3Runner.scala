@@ -4,23 +4,24 @@ import  util.Random
 import  io.Source
 
 import  id3._
-import java.io.{FileWriter, PrintWriter}
+import  id3.util.Write
 
 object ID3Runner {
 
   private val FILE_PATH = "C:/owls.csv"
+  private val WRITE_PATH = "./src/lib/results.txt"
 
   private val ATTRIBUTE_LIST = List("bodyLength", "wingLength" ,"bodyWidth", "wingWidth")
   private val TARGET_ATTRIBUTE = "owlType"
 
   private val RINSE_REPEAT = 10
 
-  def readFromCSV(fileName:String, separator:String = ",") = {
+  private def readFromCSV(fileName:String, separator:String = ",") = {
     val raw = Source.fromFile(fileName)
     raw.getLines().toSeq.map { l => l.split(separator) }
   }
 
-  def split(f:Seq[Array[String]]) = {
+  private def split(f:Seq[Array[String]]) = {
     val len = f.length
     val third = Math.round(len/3)
 
@@ -32,38 +33,15 @@ object ID3Runner {
     (training, test)
   }
 
-  def printTrainingTest(training:List[Array[String]], test:List[Array[String]]) {
-    training.groupBy { t => t(0) }foreach{t => print(t._1 + ' ')}
-    println
-    test.groupBy { t => t(0) }.foreach{t => print(t._1 + ' ')}
-  }
-
-  // takes a decision tree and pretty prints the result
-  def printTreeResult(tree:DecisionTreeNode) {
-    println(tree.attribute)
-
-    for(c <- tree.children) {
-      println(c._1)
-      printTreeResult(c._2)
-    }
-
-    println
-  }
-
-  def writeTo(f:String)(c:PrintWriter => Unit) {
-
-    val pw = new PrintWriter(new FileWriter(f, true))
-
-    try {
-      c(pw)
-    } finally {
-      pw.close()
+  private def write(v:Any) = {
+    Write.to(WRITE_PATH) {
+      s => s.println(v)
     }
   }
 
   // classify and computes average accuracy of algorithm
   // reading training and test data from file
-  def perform = {
+  private def perform = {
     val d = readFromCSV(FILE_PATH)
     val (training, test) = split(d)
 
@@ -77,16 +55,18 @@ object ID3Runner {
 
     implicit val res = DecisionTree.create(data, ATTRIBUTE_LIST, TARGET_ATTRIBUTE)
 
-    DecisionTree.classify(t, TARGET_ATTRIBUTE)(avg => avg)
+    DecisionTree.classify(t, TARGET_ATTRIBUTE) {
+      acc => {
+        write("Accuracy:\t\t\t" + acc)
+        acc
+      }
+    }
   }
 
   def main(args:Array[String]) {
     val avgs = for(i <- 1 to RINSE_REPEAT) yield perform
     val avg = avgs.sum/RINSE_REPEAT
 
-    avgs.zipWithIndex.foreach(a => print("run(" + a._2 + "):" + a._1 + '\t'))
-
-    println
-    println("average accuracy:\t" + avg)
+    write("Average Accuracy:\t" + avg)
   }
 }
